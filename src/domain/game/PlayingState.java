@@ -144,6 +144,11 @@ public class PlayingState implements GameState {
                         g.fillRect(x, y, tile, tile);
                     }
 
+                    case HOT_TILE -> {
+                        g.setColor(new Color(255,120,50));
+                        g.fillRect(x, y, tile, tile);
+                    }
+
                     case CAMPFIRE_OFF -> {
                         // Fogata apagada - Gris (ya se dibuja después)
                         g.setColor(new Color(255, 255, 240));

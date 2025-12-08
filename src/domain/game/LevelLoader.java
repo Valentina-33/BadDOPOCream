@@ -39,7 +39,10 @@ public class LevelLoader {
 
                     case 'I':
                         board.setCellType(pos, CellType.ICE_BLOCK);
+                        break;
 
+                    case 'H': // Baldose caliente
+                        board.setCellType(pos, CellType.HOT_TILE);
                         break;
 
                     case 'G': // grape fruit
