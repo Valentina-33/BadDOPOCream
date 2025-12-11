@@ -31,7 +31,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseLis
 
     public GamePanel(Game game) {
         this.game = game;
-
+        this.game.setState(new MenuState(game));
         setBackground(new Color(104,135,158));
         setFocusable(true);
         addKeyListener(this);

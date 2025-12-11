@@ -468,8 +468,9 @@ public class PlayingState implements GameState {
             p1Dir = Direction.NONE;
         }
     }
-
+    public int getTimerTicks() { return timerTicks; }
+    public void setTimerTicks(int ticks) { this.timerTicks = ticks; }
     public Level getLevel() { return level; }
-    private int getCurrentLevelNumber() { return this.currentLevelNumber; }
+    public int getCurrentLevelNumber() { return this.currentLevelNumber; }
 
 }

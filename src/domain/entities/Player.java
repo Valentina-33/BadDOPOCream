@@ -20,4 +20,5 @@ public class Player extends Entity {
     public void addScore(int pts) {this.score += pts;}
     //Maneja la muerte del jugador
     public void onHitByEnemy(Enemy e) { }
+    public void setScore(int playerScore) { this.score = playerScore;}
 }

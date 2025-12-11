@@ -10,6 +10,7 @@ public class Game {
     public void setState(GameState state) {
         this.currentState = state;
     }
+    public GameState getState() { return this.currentState; }
 
     public void update() {
         if(this.currentState != null) {
