@@ -10,15 +10,12 @@ import java.util.List;
 public class Cactus extends Fruit {
 
     public static final int CACTUS_SCORE = 250;
-    // Ya NO necesitas estos sprites aquí
-    // El render se maneja en PlayingState
-
     private static final int TICKS_PER_CYCLE = 1800;
     private int tickCounter = 0;
     private boolean hasSpikesDangerous = false;
 
     public Cactus(Position position) {
-        super(position, CACTUS_SCORE, null); // Sprite null porque se maneja externamente
+        super(position, CACTUS_SCORE, null);
     }
 
     @Override

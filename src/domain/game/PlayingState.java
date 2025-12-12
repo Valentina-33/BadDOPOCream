@@ -5,6 +5,7 @@ import domain.model.*;
 import domain.utils.Direction;
 import presentation.GamePanel;
 
+import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.util.HashMap;
@@ -35,7 +36,7 @@ public class PlayingState implements GameState {
     private static final Sprite PLAYER_ICE_SPRITE = new Sprite("/player-ice.png");
     private static final Sprite PILE_SNOW_SPRITE = new Sprite("/pile-of-snow.jpg");
     private static final Sprite IGLOO_SPRITE = new Sprite("/igloo.jpg");
-    private static final Sprite HOT_TILE_SPRITE = new Sprite ("/hot-tile.png");
+    private static final Sprite HOT_TILE_SPRITE = new Sprite("/hot-tile.png");
     private static final Sprite CAMPFIRE_ON_SPRITE = new Sprite("/campfire-on.png");
     private static final Sprite CAMPFIRE_OFF_SPRITE = new Sprite("/campfire-off.png");
 
@@ -46,13 +47,25 @@ public class PlayingState implements GameState {
     // Dirección jugador 1
     private Direction p1Dir = Direction.NONE;
 
+    /**
+     * Constructor para crear un PlayingState desde un número de nivel predefinido
+     */
     public PlayingState(Game game, int levelNumber) {
         this.game = game;
         this.currentLevelNumber = levelNumber;
-
-        //Crear el Level
         this.level = LevelFactory.createLevel(levelNumber);
     }
+
+    /**
+     * Constructor para crear un PlayingState desde un Level importado
+     * Útil cuando se importa un nivel personalizado desde archivo .txt
+     */
+    public PlayingState(Game game, Level customLevel) {
+        this.game = game;
+        this.currentLevelNumber = -1; // -1 indica nivel personalizado
+        this.level = customLevel;
+    }
+
 
     @Override
     public void update() {
@@ -83,14 +96,22 @@ public class PlayingState implements GameState {
     }
 
     private void handleTimeUp() {
-        // Esperar 2 segundos y reiniciar
         new Thread(() -> {
             try {
-                Thread.sleep(2000); // 2 segundos de pausa
+                Thread.sleep(2000);
 
-                // Reiniciar el nivel
-                int currentLevel = getCurrentLevelNumber(); // Obtener nivel actual
-                game.setState(new PlayingState(game, currentLevel));
+                // Si es un nivel personalizado, no podemos reiniciarlo desde el número
+                if (isCustomLevel()) {
+                    // Volver al menú o mostrar mensaje
+                    JOptionPane.showMessageDialog(null,
+                            "Tiempo agotado en nivel personalizado",
+                            "Game Over",
+                            JOptionPane.INFORMATION_MESSAGE);
+                    return;
+                }
+
+                // Reiniciar nivel predefinido
+                game.setState(new PlayingState(game, currentLevelNumber));
 
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -179,96 +200,12 @@ public class PlayingState implements GameState {
         // Jugadores
         List<Player> players = level.getPlayers();
         for (Player p : players) {
-            int x = p.getPosition().getCol() * tile;
-            int y = p.getPosition().getRow() * tile;
-
-            // 🍦 JUGADOR - Cian brillante (helado)
-            g.setColor(new Color(0, 255, 255)); // Cian
-            g.fillOval(x + tile / 6, y + tile / 6, 2 * tile / 3, 2 * tile / 3);
-
-            // Cara del helado
-            g.setColor(Color.BLACK);
-            // Ojos
-            g.fillOval(x + tile / 3, y + tile / 3, tile / 8, tile / 8);
-            g.fillOval(x + tile / 2, y + tile / 3, tile / 8, tile / 8);
-            // Boca
-            g.drawArc(x + tile / 3, y + tile / 2 - 5, tile / 3, tile / 4, 0, -180);
-
-            // Brillo
-            g.setColor(new Color(200, 255, 255));
-            g.fillOval(x + tile / 4, y + tile / 4, tile / 6, tile / 6);
+            p.render(g, tile);
         }
 
         //  Enemigos
         for (Enemy e : level.getEnemies()) {
-            int x = e.getPosition().getCol() * tile;
-            int y = e.getPosition().getRow() * tile;
-
-            switch (e) {
-                case OrangeSquid orangeSquid -> {
-                    // Calamar naranja
-                    g.setColor(new Color(255, 140, 0));
-
-                    g.fillOval(x + tile / 6, y + tile / 6, 2 * tile / 3, 2 * tile / 3);
-
-                    // Tentáculos
-                    g.setColor(new Color(255, 165, 0));
-                    for (int i = 0; i < 3; i++) {
-                        int tentX = x + tile / 4 + i * tile / 6;
-                        g.fillRect(tentX, y + 2 * tile / 3, tile / 12, tile / 4);
-                    }
-
-                    // Ojos malvados
-                    g.setColor(Color.RED);
-                    g.fillOval(x + tile / 3, y + tile / 3, tile / 8, tile / 8);
-                    g.fillOval(x + tile / 2, y + tile / 3, tile / 8, tile / 8);
-                }
-                case Troll troll -> {
-                    // Troll
-                    g.setColor(new Color(178, 34, 34)); // Rojo ladrillo
-
-                    g.fillOval(x + tile / 6, y + tile / 6, 2 * tile / 3, 2 * tile / 3);
-
-                    // Cuernos
-                    g.setColor(new Color(139, 0, 0));
-                    int[] xHorn1 = {x + tile / 4, x + tile / 4 - tile / 8, x + tile / 4};
-                    int[] yHorn1 = {y + tile / 4, y + tile / 8, y + tile / 6};
-                    g.fillPolygon(xHorn1, yHorn1, 3);
-
-                    int[] xHorn2 = {x + 3 * tile / 4, x + 3 * tile / 4 + tile / 8, x + 3 * tile / 4};
-                    int[] yHorn2 = {y + tile / 4, y + tile / 8, y + tile / 6};
-                    g.fillPolygon(xHorn2, yHorn2, 3);
-
-                    // Ojos
-                    g.setColor(Color.YELLOW);
-                    g.fillOval(x + tile / 3, y + tile / 3, tile / 8, tile / 8);
-                    g.fillOval(x + tile / 2, y + tile / 3, tile / 8, tile / 8);
-                }
-                case Maceta maceta -> {
-                    // Maceta
-                    g.setColor(new Color(139, 69, 19));
-                    int[] xPot = {x + tile / 4, x + 3 * tile / 4, x + 2 * tile / 3, x + tile / 3};
-                    int[] yPot = {y + 2 * tile / 3, y + 2 * tile / 3, y + tile / 6, y + tile / 6};
-                    g.fillPolygon(xPot, yPot, 4);
-
-                    // Planta (verde)
-                    g.setColor(new Color(34, 139, 34));
-                    g.fillOval(x + tile / 3, y + tile / 6, tile / 3, tile / 2);
-
-                    // Ojos en la planta
-                    g.setColor(Color.WHITE);
-                    g.fillOval(x + tile / 3 + 5, y + tile / 3, tile / 10, tile / 10);
-                    g.fillOval(x + tile / 2, y + tile / 3, tile / 10, tile / 10);
-                    g.setColor(Color.BLACK);
-                    g.fillOval(x + tile / 3 + 7, y + tile / 3 + 2, tile / 15, tile / 15);
-                    g.fillOval(x + tile / 2 + 2, y + tile / 3 + 2, tile / 15, tile / 15);
-                }
-                default -> {
-                    // Otros enemigos - Rojo genérico
-                    g.setColor(new Color(255, 0, 0));
-                    g.fillOval(x + tile / 6, y + tile / 6, 2 * tile / 3, 2 * tile / 3);
-                }
-            }
+            e.render(g, tile);
         }
 
         // Puntaje + Timer
@@ -318,16 +255,6 @@ public class PlayingState implements GameState {
                 g.drawString(restart, x, y + 40);
             }
         }
-
-    }
-    @Override
-    public void keyPressed(Integer keyCode) {
-        // Jugador 1 con flechas
-        if (keyCode == KeyEvent.VK_UP)    p1Dir = Direction.UP;
-        if (keyCode == KeyEvent.VK_DOWN)  p1Dir = Direction.DOWN;
-        if (keyCode == KeyEvent.VK_LEFT)  p1Dir = Direction.LEFT;
-        if (keyCode == KeyEvent.VK_RIGHT) p1Dir = Direction.RIGHT;
-        if (keyCode == KeyEvent.VK_SPACE) placeOrBreakIce();
 
     }
 
@@ -459,6 +386,19 @@ public class PlayingState implements GameState {
     }
 
     @Override
+    public void keyPressed(Integer keyCode) {
+        // Jugador 1 con flechas
+        if (keyCode == KeyEvent.VK_ESCAPE || keyCode == KeyEvent.VK_P) {
+            game.setState(new PauseState(game, this)); }
+        if (keyCode == KeyEvent.VK_UP)    p1Dir = Direction.UP;
+        if (keyCode == KeyEvent.VK_DOWN)  p1Dir = Direction.DOWN;
+        if (keyCode == KeyEvent.VK_LEFT)  p1Dir = Direction.LEFT;
+        if (keyCode == KeyEvent.VK_RIGHT) p1Dir = Direction.RIGHT;
+        if (keyCode == KeyEvent.VK_SPACE) placeOrBreakIce();
+
+    }
+
+    @Override
     public void keyReleased(Integer keyCode) {
         // Si sueltas una tecla que corresponde a la dirección actual, paramos
         if ((keyCode == KeyEvent.VK_UP    && p1Dir == Direction.UP) ||
@@ -472,5 +412,6 @@ public class PlayingState implements GameState {
     public void setTimerTicks(int ticks) { this.timerTicks = ticks; }
     public Level getLevel() { return level; }
     public int getCurrentLevelNumber() { return this.currentLevelNumber; }
+    public boolean isCustomLevel() { return this.currentLevelNumber == -1; }
 
 }

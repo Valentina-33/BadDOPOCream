@@ -32,8 +32,8 @@ public class MacetaChaseMovement implements MovementBehavior {
     private static final int CHASE_MOVEMENTS  = 35;
 
     // Velocidades: cada cuántos ticks se mueve en cada modo
-    private static final int RANDOM_TICKS_PER_MOVE = 16; // Más lento en random
-    private static final int CHASE_TICKS_PER_MOVE  = 12;  // Más rápido en chase
+    private static final int RANDOM_TICKS_PER_MOVE = 20;// Más lento en random
+    private static final int CHASE_TICKS_PER_MOVE  = 16;  // Más rápido en chase
 
     // Contador de ticks desde el último movimiento
     private int ticksSinceLastMove = 0;

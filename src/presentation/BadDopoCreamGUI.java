@@ -136,10 +136,7 @@ public class BadDopoCreamGUI extends JFrame {
         if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             try {
                 Level level = LevelImporter.importFromFile(chooser.getSelectedFile());
-
-                // Crear PlayingState con el nivel importado
-                // Nota: Necesitarás un constructor que acepte Level directamente
-                game.setState(new PlayingState(game, 1));
+                game.setState(new PlayingState(game, level));
 
                 JOptionPane.showMessageDialog(this,
                         "Nivel importado correctamente",

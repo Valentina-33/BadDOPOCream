@@ -103,7 +103,7 @@ public class MenuState implements GameState {
     @Override
     public void mouseClicked(Integer x, Integer y) {
         if (playButtonRect != null && playButtonRect.contains(x, y)) {
-            game.setState(new PlayingState(game,3));
+            game.setState(new PlayingState(game,2));
         }
     }
 }

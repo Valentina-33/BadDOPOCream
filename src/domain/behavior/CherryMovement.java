@@ -25,13 +25,7 @@ public class CherryMovement {
     public void update(Level level, Fruit cherry) {
         tickCounter++;
 
-        // DEBUG temporal
-        if (tickCounter % 60 == 0) { // Cada segundo
-            System.out.println("Cherry tickCounter: " + tickCounter + " / " + TICKS_PER_TELEPORT);
-        }
-
         if (tickCounter >= TICKS_PER_TELEPORT) {
-            System.out.println("CHERRY TELETRANSPORTÁNDOSE");
             teleportToRandomPosition(level.getBoard(), cherry);
             tickCounter = 0;
         }

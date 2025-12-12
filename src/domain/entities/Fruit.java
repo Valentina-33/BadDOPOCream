@@ -18,7 +18,6 @@ public abstract class Fruit extends Entity{
         this.scoreValue = scoreValue;
     }
 
-    public int getScoreValue() {return this.scoreValue;}
     public boolean isCollected() {return this.collected;}
     public void collect() {this.collected = true;}
     public void update(Level level) { }

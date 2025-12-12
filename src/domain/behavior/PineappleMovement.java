@@ -21,7 +21,7 @@ public class PineappleMovement implements FruitMovementBehavior {
     private Direction dir = Direction.UP;
 
     private int tickCounter = 0;
-    private static final int TICKS_PER_MOVE = 12;
+    private static final int TICKS_PER_MOVE = 16;
 
     private boolean jumping = false;
     private Position jumpOver;

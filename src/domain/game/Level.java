@@ -22,7 +22,7 @@ public class Level {
     private int currentPhaseIndex = 0;
     private final Map<Player, Direction> lastInputs = new HashMap<>();
     private int playerTickCounter = 0;
-    private static final int TICKS_PER_PLAYER_MOVE = 5;
+    private static final int TICKS_PER_PLAYER_MOVE = 8;
 
 
     public Level (Board board, List<Player> players, List<Enemy> enemies, List<Fruit> fruits, List<Campfire> campfires,
@@ -78,7 +78,7 @@ public class Level {
     }
 
     private void updateFruitPhase() {
-        // Si no hay fases definidas, no hacemos nada especial
+        // Si no hay fases definidas, no pasa nada
         if (fruitPhases.isEmpty()) return;
 
         // Si aún faltan frutas activas por recoger, seguimos en la misma fase

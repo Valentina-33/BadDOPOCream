@@ -19,12 +19,12 @@ import domain.utils.Direction;
 public class OrangeSquidMovement implements MovementBehavior {
 
     private int tickCounter = 0;
-    private static final int TICKS_PER_MOVE = 12;
+    private static final int TICKS_PER_MOVE = 16;
 
     // Control de destrucción de hielo
     private boolean isBreakingIce = false;
     private int breakingTickCounter = 0;
-    private static final int TICKS_TO_BREAK_ICE = 10;
+    private static final int TICKS_TO_BREAK_ICE = 12;
     private Position iceBeingBroken = null;
 
     @Override

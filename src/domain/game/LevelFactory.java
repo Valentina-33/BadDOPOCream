@@ -17,7 +17,6 @@ public class LevelFactory {
     }
 
     private static Level createLevel1() {
-        //Mapa del nivel 1
         String path = "/maps/level1.txt";
 
         // Orden de aparición de frutas: bananos, luego uvas

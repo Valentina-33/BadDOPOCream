@@ -24,8 +24,8 @@ public class NarvalMovement implements MovementBehavior {
 
     // Velocidades diferentes según el estado
     private int tickCounter = 0;
-    private static final int TICKS_PER_PATROL_MOVE = 16;  // Patrulla lenta
-    private static final int TICKS_PER_CHARGE_MOVE = 8;  // Embestida rápida
+    private static final int TICKS_PER_PATROL_MOVE = 20;  // Patrulla lenta
+    private static final int TICKS_PER_CHARGE_MOVE = 12;  // Embestida rápida
 
     // Rango de detección (cuántas casillas puede ver)
     private static final int DETECTION_RANGE = 15;
@@ -201,19 +201,5 @@ public class NarvalMovement implements MovementBehavior {
             // Rebotar: girar 180 grados
             narwhal.setDirection(dir.opposite());
         }
-    }
-
-    /**
-     * @return true si el narval está en modo embestida
-     */
-    public boolean isCharging() {
-        return state == State.CHARGING;
-    }
-
-    /**
-     * @return true si el narval está patrullando
-     */
-    public boolean isPatrolling() {
-        return state == State.PATROL;
     }
 }

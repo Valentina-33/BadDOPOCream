@@ -11,8 +11,8 @@ import domain.model.*;
  */
 public class Campfire extends Entity {
 
-    public static final Sprite SPRITE_ON = new Sprite("/grape.jpg");
-    public static final Sprite SPRITE_OFF = new Sprite("/banana.jpg");
+    public static final Sprite SPRITE_ON = new Sprite("/campfire-on.png");
+    public static final Sprite SPRITE_OFF = new Sprite("/campfire-off.png");
 
     private static final int TICKS_TO_RELIGHT = 600;
 
@@ -69,7 +69,7 @@ public class Campfire extends Entity {
         return isLit ? 0f : (float) relightCounter / TICKS_TO_RELIGHT;
     }
 
-    // NUEVO: Método para obtener el sprite correcto según el estado
+    // Obtener el sprite correcto según el estado
     public Sprite getCurrentSprite() {
         return isLit ? SPRITE_ON : SPRITE_OFF;
     }
