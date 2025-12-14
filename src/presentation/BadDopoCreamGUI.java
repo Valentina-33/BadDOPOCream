@@ -15,7 +15,7 @@ import java.io.IOException;
  */
 public class BadDopoCreamGUI extends JFrame {
 
-    private final Game gmee;
+    private final Game game;
 
     public BadDopoCreamGUI() {
         setTitle("Bad DOPO Cream");
