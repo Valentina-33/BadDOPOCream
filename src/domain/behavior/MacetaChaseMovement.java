@@ -33,7 +33,7 @@ public class MacetaChaseMovement implements MovementBehavior {
 
     // Velocidades: cada cuántos ticks se mueve en cada modo
     private static final int RANDOM_TICKS_PER_MOVE = 20;// Más lento en random
-    private static final int CHASE_TICKS_PER_MOVE  = 16;  // Más rápido en chase
+    private static final int CHASE_TICKS_PER_MOVE  = 8;  // Más rápido en chase
 
     // Contador de ticks desde el último movimiento
     private int ticksSinceLastMove = 0;
@@ -57,10 +57,6 @@ public class MacetaChaseMovement implements MovementBehavior {
         Board board = level.getBoard();
         List<Player> players = level.getPlayers();
         if (players.isEmpty()) return;
-
-        Player target = players.getFirst();
-        Position start = enemy.getPosition();
-        Position goal  = target.getPosition();
 
         // Incrementar contador de ticks
         ticksSinceLastMove++;
@@ -88,6 +84,15 @@ public class MacetaChaseMovement implements MovementBehavior {
             }
 
         } else { // CHASING
+            Player target = findNearestAlivePlayer(level, enemy);
+            if (target == null) {
+                switchToRandomMode();
+                return;
+            }
+
+            Position start = enemy.getPosition();
+            Position goal  = target.getPosition();
+
             chaseStep(board, enemy, start, goal);
             movementCounter++;
 
@@ -96,6 +101,25 @@ public class MacetaChaseMovement implements MovementBehavior {
                 switchToRandomMode();
             }
         }
+    }
+
+    private Player findNearestAlivePlayer(Level level, Enemy enemy) {
+        Player nearest = null;
+        int minDistance = Integer.MAX_VALUE;
+
+        for (Player p : level.getPlayers()) {
+            if (p.isDead()) continue;
+
+            int d = Math.abs(enemy.getPosition().getRow() - p.getPosition().getRow())
+                    + Math.abs(enemy.getPosition().getCol() - p.getPosition().getCol());
+
+            if (d < minDistance) {
+                minDistance = d;
+                nearest = p;
+            }
+        }
+
+        return nearest;
     }
 
     /**
@@ -107,6 +131,8 @@ public class MacetaChaseMovement implements MovementBehavior {
         movementCounter = 0;
         ticksSinceLastMove = 0;
         currentPath.clear();
+        lastTargetRow = -1;
+        lastTargetCol = -1;
     }
 
     /**
@@ -118,6 +144,8 @@ public class MacetaChaseMovement implements MovementBehavior {
         movementCounter = 0;
         ticksSinceLastMove = 0;
         currentPath.clear();
+        lastTargetRow = -1;
+        lastTargetCol = -1;
     }
 
     /**
@@ -160,7 +188,7 @@ public class MacetaChaseMovement implements MovementBehavior {
 
         List<Direction> validDirections = new ArrayList<>();
 
-        // Filtrar solo direcciones caminables 
+        // Filtrar solo direcciones caminables
         for (Direction dir : allDirections) {
             Position nextPos = pos.translated(dir.getDRow(), dir.getDCol());
             if (board.isInside(nextPos) && board.isWalkable(nextPos)) {

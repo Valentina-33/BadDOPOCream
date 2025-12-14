@@ -1,9 +1,6 @@
 package presentation;
 
-import domain.game.Game;
-import domain.game.GameState;
-import domain.game.PlayingState;
-
+import domain.game.*;
 import javax.swing.*;
 import java.awt.*;
 import java.util.Objects;
@@ -14,7 +11,10 @@ import java.util.Objects;
 public class SelectLevelState implements GameState {
 
     private final Game game;
-    private final int gameMode; // 0=PvP, 1=PvM, 2=MvM
+    private final int gameMode; // 1=PvP, 2=PvM, 3=MvM
+
+    private final AIProfile aiProfileP1; // solo se usa en MvM
+    private final AIProfile aiProfileP2; // PvM/MvM
 
     // Imágenes
     private Image backgroundGif;
@@ -49,18 +49,28 @@ public class SelectLevelState implements GameState {
     private final int levelBoxWidth = 114;
     private final int levelBoxHeight = 112;
 
-    // Posiciones Y para todas las cajas de nivel
     private final int levelBoxY = topBoxY + (topBoxHeight - levelBoxHeight) / 2;
 
-    // Posiciones X de cada nivel
-    private final int level1BoxX = topBoxX + padding+50;
-    private final int level2BoxX = topBoxX + padding + levelBoxWidth + padding+50;
-    private final int level3BoxX = topBoxX + padding + (levelBoxWidth + padding) * 2+50;
+    private final int level1BoxX = topBoxX + padding + 50;
+    private final int level2BoxX = topBoxX + padding + levelBoxWidth + padding + 50;
+    private final int level3BoxX = topBoxX + padding + (levelBoxWidth + padding) * 2 + 50;
 
+    // Constructor viejo (compatibilidad)
     public SelectLevelState(Game game, int gameMode) {
+        this(game, gameMode, null, null);
+    }
+
+    // Constructor nuevo
+    public SelectLevelState(Game game, int gameMode, AIProfile aiProfileP1, AIProfile aiProfileP2) {
         this.game = game;
         this.gameMode = gameMode;
+        this.aiProfileP1 = aiProfileP1;
+        this.aiProfileP2 = aiProfileP2;
 
+        loadAssets();
+    }
+
+    private void loadAssets() {
         try {
             this.backgroundGif = new ImageIcon(
                     Objects.requireNonNull(getClass().getResource("/home-animation.gif"))
@@ -77,18 +87,23 @@ public class SelectLevelState implements GameState {
             this.playerBg = new ImageIcon(
                     Objects.requireNonNull(getClass().getResource("/player-bg.jpg"))
             ).getImage();
+
             this.levelSelect = new ImageIcon(
                     Objects.requireNonNull(getClass().getResource("/level-select.png"))
             ).getImage();
+
             this.levelOne = new ImageIcon(
                     Objects.requireNonNull(getClass().getResource("/level-1.png"))
             ).getImage();
+
             this.levelTwo = new ImageIcon(
                     Objects.requireNonNull(getClass().getResource("/level-2.png"))
             ).getImage();
+
             this.levelThree = new ImageIcon(
                     Objects.requireNonNull(getClass().getResource("/level-3.png"))
             ).getImage();
+
         } catch (Exception e) {
             System.err.println("Error cargando recursos: " + e.getMessage());
         }
@@ -99,7 +114,6 @@ public class SelectLevelState implements GameState {
         int width = GamePanel.WIDTH;
         int height = GamePanel.HEIGHT;
 
-        // Fondo
         if (backgroundGif != null) {
             g.drawImage(backgroundGif, 0, 0, width, height, null);
         } else {
@@ -107,40 +121,18 @@ public class SelectLevelState implements GameState {
             g.fillRect(0, 0, width, height);
         }
 
-        // Fondo completo
-        if (backgroundGif != null) {
-            g.drawImage(backgroundGif, 0, 0, GamePanel.WIDTH, GamePanel.HEIGHT, null);
-        } else {
-            g.setColor(Color.BLACK);
-            g.fillRect(0, 0, GamePanel.WIDTH, GamePanel.HEIGHT);
-        }
-
-        // Caja superior
         if (playerBg != null) {
             g.drawImage(playerBg, topBoxX, topBoxY, topBoxWidth, topBoxHeight, null);
         }
 
-        // Título "Level select"
         if (levelSelect != null) {
             int titleWidth = 330;
             int titleHeight = 40;
-
             int titleX = topBoxX + (topBoxWidth - titleWidth) / 2;
             int titleY = topBoxY + 20;
-
             g.drawImage(levelSelect, titleX, titleY, titleWidth, titleHeight, null);
         }
 
-        // Caja inferior BACK
-        if (buttonBackBg != null) {
-            g.drawImage(buttonBackBg, bottomBoxX, bottomBoxY, bottomBoxWidth, bottomBoxHeight, null);
-        }
-
-        // Botón BACK
-        if (backButton != null) {
-            g.drawImage(backButton, backBtnX, backBtnY, backBtnWidth, backBtnHeight, null);
-        }
-        //Niveles
         if (levelOne != null) {
             g.drawImage(levelOne, level1BoxX, levelBoxY, levelBoxWidth, levelBoxHeight, null);
         }
@@ -150,52 +142,74 @@ public class SelectLevelState implements GameState {
         if (levelThree != null) {
             g.drawImage(levelThree, level3BoxX, levelBoxY, levelBoxWidth, levelBoxHeight, null);
         }
+
+        if (buttonBackBg != null) {
+            g.drawImage(buttonBackBg, bottomBoxX, bottomBoxY, bottomBoxWidth, bottomBoxHeight, null);
+        }
+        if (backButton != null) {
+            g.drawImage(backButton, backBtnX, backBtnY, backBtnWidth, backBtnHeight, null);
+        }
     }
 
     @Override
     public void mouseClicked(Integer x, Integer y) {
-        // Click BACK
+        // BACK: vuelve a ChooseFlavourState conservando perfiles si aplica
         if (x >= backBtnX && x <= backBtnX + backBtnWidth &&
                 y >= backBtnY && y <= backBtnY + backBtnHeight) {
 
-            game.setState(new ChooseFlavourState(game, gameMode));
+            if (gameMode == 2 || gameMode == 3) {
+                game.setState(new ChooseFlavourState(game, gameMode, aiProfileP1, aiProfileP2));
+            } else {
+                game.setState(new ChooseFlavourState(game, gameMode));
+            }
             return;
         }
+
         // Nivel 1
         if (x >= level1BoxX && x <= level1BoxX + levelBoxWidth &&
                 y >= levelBoxY && y <= levelBoxY + levelBoxHeight) {
-
-            System.out.println("Seleccionaste Nivel 1");
-            int levelNumber = 1;
-            game.setState(new PlayingState(game, levelNumber));
+            startLevel(1);
             return;
         }
+
         // Nivel 2
         if (x >= level2BoxX && x <= level2BoxX + levelBoxWidth &&
                 y >= levelBoxY && y <= levelBoxY + levelBoxHeight) {
-
-            System.out.println("Seleccionaste Nivel 2");
-            int levelNumber = 2;
-            game.setState(new PlayingState(game, levelNumber));
+            startLevel(2);
             return;
         }
+
         // Nivel 3
         if (x >= level3BoxX && x <= level3BoxX + levelBoxWidth &&
                 y >= levelBoxY && y <= levelBoxY + levelBoxHeight) {
-
-            System.out.println("Seleccionaste Nivel 3");
-            int levelNumber = 3;
-            game.setState(new PlayingState(game, levelNumber));
+            startLevel(3);
         }
     }
 
-    @Override
-    public void keyPressed(Integer key) {}
+    private void startLevel(int levelNumber) {
+        // 1=PvP, 2=PvM, 3=MvM (según tu SelectModeState)
 
-    @Override
-    public void update() {}
+        if (gameMode == 1) {
+            game.setState(new PlayingState(game, levelNumber, GameMode.PVP, null, null));
+            return;
+        }
 
-    @Override
-    public void keyReleased(Integer keyCode) {}
+        if (gameMode == 2) {
+            // P1 humano, P2 máquina
+            AIProfile p2 = (aiProfileP2 != null) ? aiProfileP2 : AIProfile.HUNGRY;
+            game.setState(new PlayingState(game, levelNumber, GameMode.PVM, null, p2));
+            return;
+        }
 
+        if (gameMode == 3) {
+            // Ambos máquina
+            AIProfile p1 = (aiProfileP1 != null) ? aiProfileP1 : AIProfile.HUNGRY;
+            AIProfile p2 = (aiProfileP2 != null) ? aiProfileP2 : AIProfile.FEARFUL;
+            game.setState(new PlayingState(game, levelNumber, GameMode.MVM, p1, p2));
+        }
+    }
+
+    @Override public void keyPressed(Integer key) {}
+    @Override public void update() {}
+    @Override public void keyReleased(Integer keyCode) {}
 }

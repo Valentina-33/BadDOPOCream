@@ -6,6 +6,7 @@ import domain.model.*;
 import domain.utils.Direction;
 
 import java.util.List;
+import java.util.Random;
 
 /**
  * Comportamiento del Narval:
@@ -25,10 +26,12 @@ public class NarvalMovement implements MovementBehavior {
     // Velocidades diferentes según el estado
     private int tickCounter = 0;
     private static final int TICKS_PER_PATROL_MOVE = 20;  // Patrulla lenta
-    private static final int TICKS_PER_CHARGE_MOVE = 12;  // Embestida rápida
+    private static final int TICKS_PER_CHARGE_MOVE = 6;   // Embestida rápida
 
     // Rango de detección (cuántas casillas puede ver)
     private static final int DETECTION_RANGE = 15;
+
+    private final Random random = new Random();
 
     @Override
     public void move(Level level, Entity object) {
@@ -68,27 +71,36 @@ public class NarvalMovement implements MovementBehavior {
         List<Player> players = level.getPlayers();
         Board board = level.getBoard();
 
+        Player bestPlayer = null;
+        int bestDistance = Integer.MAX_VALUE;
+
         for (Player player : players) {
+            if (player.isDead()) continue;
+
             Position playerPos = player.getPosition();
 
             // Verificar alineación horizontal (misma fila)
             if (narwhalPos.getRow() == playerPos.getRow()) {
                 int distance = Math.abs(narwhalPos.getCol() - playerPos.getCol());
-                if (distance <= DETECTION_RANGE && hasLineOfSight(board, narwhalPos, playerPos, true)) {
-                    return player;
+                if (distance <= DETECTION_RANGE && distance < bestDistance &&
+                        hasLineOfSight(board, narwhalPos, playerPos, true)) {
+                    bestDistance = distance;
+                    bestPlayer = player;
                 }
             }
 
             // Verificar alineación vertical (misma columna)
             if (narwhalPos.getCol() == playerPos.getCol()) {
                 int distance = Math.abs(narwhalPos.getRow() - playerPos.getRow());
-                if (distance <= DETECTION_RANGE && hasLineOfSight(board, narwhalPos, playerPos, false)) {
-                    return player;
+                if (distance <= DETECTION_RANGE && distance < bestDistance &&
+                        hasLineOfSight(board, narwhalPos, playerPos, false)) {
+                    bestDistance = distance;
+                    bestPlayer = player;
                 }
             }
         }
 
-        return null;
+        return bestPlayer;
     }
 
     /**
@@ -112,7 +124,7 @@ public class NarvalMovement implements MovementBehavior {
                     return false;
                 }
             }
-        // Vertical
+            // Vertical
         } else {
             int col = from.getCol();
             int rowStart = Math.min(from.getRow(), to.getRow());
@@ -159,6 +171,12 @@ public class NarvalMovement implements MovementBehavior {
         Board board = level.getBoard();
         Position current = narwhal.getPosition();
         Direction dir = narwhal.getDirection();
+
+        if (dir == null || dir == Direction.NONE) {
+            state = State.PATROL;
+            return;
+        }
+
         Position next = current.translated(dir.getDRow(), dir.getDCol());
 
         if (!board.isInside(next)) {
@@ -192,6 +210,14 @@ public class NarvalMovement implements MovementBehavior {
         Board board = level.getBoard();
         Position current = narwhal.getPosition();
         Direction dir = narwhal.getDirection();
+
+        if (dir == null || dir == Direction.NONE) {
+            Direction newDir = pickRandomWalkableDirection(board, current);
+            if (newDir == Direction.NONE) return;
+            narwhal.setDirection(newDir);
+            dir = newDir;
+        }
+
         Position next = current.translated(dir.getDRow(), dir.getDCol());
 
         // Si puede avanzar, lo hace
@@ -199,7 +225,37 @@ public class NarvalMovement implements MovementBehavior {
             narwhal.setPosition(next);
         } else {
             // Rebotar: girar 180 grados
-            narwhal.setDirection(dir.opposite());
+            Direction opposite = dir.opposite();
+            Position oppositeNext = current.translated(opposite.getDRow(), opposite.getDCol());
+
+            if (board.isInside(oppositeNext) && board.isWalkable(oppositeNext)) {
+                narwhal.setDirection(opposite);
+            } else {
+                Direction newDir = pickRandomWalkableDirection(board, current);
+                if (newDir != Direction.NONE) {
+                    narwhal.setDirection(newDir);
+                }
+            }
         }
+    }
+
+    private Direction pickRandomWalkableDirection(Board board, Position current) {
+        Direction[] dirs = {Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT};
+
+        for (int i = dirs.length - 1; i > 0; i--) {
+            int j = random.nextInt(i + 1);
+            Direction tmp = dirs[i];
+            dirs[i] = dirs[j];
+            dirs[j] = tmp;
+        }
+
+        for (Direction d : dirs) {
+            Position next = current.translated(d.getDRow(), d.getDCol());
+            if (board.isInside(next) && board.isWalkable(next)) {
+                return d;
+            }
+        }
+
+        return Direction.NONE;
     }
 }

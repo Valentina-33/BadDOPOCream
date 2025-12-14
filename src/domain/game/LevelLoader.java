@@ -99,6 +99,7 @@ public class LevelLoader {
                                 new OrangeSquidMovement()
                         ));
                         break;
+
                     case 'V': // Narval
                         board.setCellType(pos, CellType.FLOOR);
                         enemies.add(new Narval(
@@ -114,6 +115,11 @@ public class LevelLoader {
                         break;
 
                     case 'P': // player
+                        board.setCellType(pos, CellType.FLOOR);
+                        players.add(new Player(pos));
+                        break;
+
+                    case 'Q': // player 2
                         board.setCellType(pos, CellType.FLOOR);
                         players.add(new Player(pos));
                         break;
@@ -255,6 +261,11 @@ public class LevelLoader {
                         players.add(new Player(pos));
                         break;
 
+                    case 'Q':
+                        board.setCellType(pos, CellType.FLOOR);
+                        players.add(new Player(pos));
+                        break;
+
                     case 'C':
                         board.setCellType(pos, CellType.FLOOR);
                         fruits.add(new Cactus(pos));
@@ -294,5 +305,4 @@ public class LevelLoader {
             throw new RuntimeException("Error leyendo mapa desde archivo: " + file.getName(), e);
         }
     }
-
 }

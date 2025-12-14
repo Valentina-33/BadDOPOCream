@@ -22,10 +22,20 @@ public class PlayingState implements GameState {
 
     private final Game game;
     private final Level level;
+
+
     private int timerTicks = 0;
     private static final int TIME_LIMIT = 10800; // 3 minutos a 60 FPS
     private boolean timeUp = false;
+
     private final int currentLevelNumber;
+
+    private final GameMode mode;
+    private final AIProfile p1Profile;
+    private final AIProfile p2Profile;
+
+    private final AIController aiP1;
+    private final AIController aiP2;
 
     // Sprites estáticos
     private static final Sprite FLOOR_SPRITE = new Sprite("/empty.jpg");
@@ -44,55 +54,116 @@ public class PlayingState implements GameState {
     private static final Sprite CACTUS_SAFE_SPRITE = new Sprite("/cactus-safe.png");
     private static final Sprite CACTUS_DANGEROUS_SPRITE = new Sprite("/cactus-not-safe.png");
 
-    // Dirección jugador 1
+    // Inputs humanos
     private Direction p1Dir = Direction.NONE;
+    private Direction p2Dir = Direction.NONE;
 
     /**
-     * Constructor para crear un PlayingState desde un número de nivel predefinido
+     * Constructor viejo: mantiene compatibilidad con pantallas que solo envían levelNumber.
+     * Para esta llamada, asumimos modo PLAYER.
      */
     public PlayingState(Game game, int levelNumber) {
+        this(game, levelNumber, GameMode.PLAYER, null, null);
+    }
+
+    /**
+     * Constructor principal: maneja todos los modos (PLAYER / PVP / PVM / MVM).
+     */
+    public PlayingState(Game game, int levelNumber, GameMode mode, AIProfile p1AI, AIProfile p2AI) {
         this.game = game;
         this.currentLevelNumber = levelNumber;
         this.level = LevelFactory.createLevel(levelNumber);
+
+        this.mode = mode != null ? mode : GameMode.PLAYER;
+
+        this.p1Profile = p1AI;
+        this.p2Profile = p2AI;
+
+        this.aiP1 = (p1AI != null) ? new AIController(p1AI) : null;
+        this.aiP2 = (p2AI != null) ? new AIController(p2AI) : null;
     }
 
     /**
-     * Constructor para crear un PlayingState desde un Level importado
-     * Útil cuando se importa un nivel personalizado desde archivo .txt
+     * Constructor para nivel importado: también inicializa modo y perfiles.
      */
-    public PlayingState(Game game, Level customLevel) {
+    public PlayingState(Game game, Level customLevel, GameMode mode, AIProfile p1AI, AIProfile p2AI) {
         this.game = game;
-        this.currentLevelNumber = -1; // -1 indica nivel personalizado
+        this.currentLevelNumber = -1;
         this.level = customLevel;
+
+        this.mode = mode != null ? mode : GameMode.PLAYER;
+
+        this.p1Profile = p1AI;
+        this.p2Profile = p2AI;
+
+        this.aiP1 = (p1AI != null) ? new AIController(p1AI) : null;
+        this.aiP2 = (p2AI != null) ? new AIController(p2AI) : null;
     }
 
+    /**
+     * Si alguien en tu flujo todavía llama el custom viejo, que no rompa.
+     */
+    public PlayingState(Game game, Level customLevel) {
+        this(game, customLevel, GameMode.PLAYER, null, null);
+    }
 
     @Override
     public void update() {
-        // Verificar si el tiempo se acabó
-        if (timeUp) {
-            return; // No actualizar nada más
-        }
+        if (timeUp) return;
 
-        // Incrementar el timer
         timerTicks++;
 
-        // Verificar si se acabó el tiempo
         if (timerTicks >= TIME_LIMIT) {
             timeUp = true;
             handleTimeUp();
             return;
         }
 
-        // Construir el mapa de inputs para los jugadores
         Map<Player, Direction> inputs = new HashMap<>();
+        List<Player> players = level.getPlayers();
 
-        // Para jugador 1
-        Player p1 = level.getPlayers().getFirst();
-        inputs.put(p1, p1Dir);
+        // P1
+        if (!players.isEmpty()) {
+            Player p1 = players.get(0);
 
-        // Actualizamos la lógica del nivel
+            if (mode == GameMode.MVM) {
+                inputs.put(p1, aiP1 != null ? aiP1.decide(level, p1) : Direction.NONE);
+            } else {
+                // PLAYER, PVP, PVM: P1 es humano
+                inputs.put(p1, p1Dir);
+            }
+        }
+
+        // P2
+        if (players.size() > 1) {
+            Player p2 = players.get(1);
+
+            if (mode == GameMode.MVM || mode == GameMode.PVM) {
+                inputs.put(p2, aiP2 != null ? aiP2.decide(level, p2) : Direction.NONE);
+            } else {
+                // PVP: P2 humano
+                inputs.put(p2, p2Dir);
+            }
+        }
+
         level.update(inputs);
+
+        boolean anyAlive = false;
+        for (Player p : level.getPlayers()) {
+            if (!p.isDead()) {
+                anyAlive = true;
+                break;
+            }
+        }
+
+        if (!anyAlive) {
+            game.setState(new GameOverState(game, this, currentLevelNumber));
+            return;
+        }
+
+        if (level.isLevelCompleted()) {
+            game.setState(new WinState(game, this, currentLevelNumber));
+        }
     }
 
     private void handleTimeUp() {
@@ -100,9 +171,7 @@ public class PlayingState implements GameState {
             try {
                 Thread.sleep(2000);
 
-                // Si es un nivel personalizado, no podemos reiniciarlo desde el número
                 if (isCustomLevel()) {
-                    // Volver al menú o mostrar mensaje
                     JOptionPane.showMessageDialog(null,
                             "Tiempo agotado en nivel personalizado",
                             "Game Over",
@@ -110,8 +179,8 @@ public class PlayingState implements GameState {
                     return;
                 }
 
-                // Reiniciar nivel predefinido
-                game.setState(new PlayingState(game, currentLevelNumber));
+                // Reinicia respetando modo y perfiles
+                game.setState(new PlayingState(game, currentLevelNumber, mode, p1Profile, p2Profile));
 
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -124,11 +193,9 @@ public class PlayingState implements GameState {
         Board board = level.getBoard();
         int tile = GamePanel.TILE_SIZE;
 
-        // Fondo
         g.setColor(new Color(240, 248, 255));
         g.fillRect(0, 0, board.getCols() * tile, board.getRows() * tile);
 
-        // Dibujar tablero usando sprites
         for (int r = 0; r < board.getRows(); r++) {
             for (int c = 0; c < board.getCols(); c++) {
                 Position p = new Position(r, c);
@@ -139,57 +206,47 @@ public class PlayingState implements GameState {
 
                 switch (cell) {
                     case METALLIC_WALL -> WALL_SPRITE.draw(g, x, y, tile, tile);
-
                     case RED_WALL -> RED_WALL_SPRITE.draw(g, x, y, tile, tile);
-
                     case YELLOW_WALL -> YELLOW_WALL_SPRITE.draw(g, x, y, tile, tile);
-
                     case ICE_BLOCK -> ICE_SPRITE.draw(g, x, y, tile, tile);
-
                     case PILE_SNOW -> PILE_SNOW_SPRITE.draw(g, x, y, tile, tile);
-
                     case IGLOO_AREA -> IGLOO_SPRITE.draw(g, x, y, tile, tile);
-
                     case HOT_TILE -> HOT_TILE_SPRITE.draw(g, x, y, tile, tile);
-
                     case PLAYER_ICE -> PLAYER_ICE_SPRITE.draw(g, x, y, tile, tile);
-
                     default -> FLOOR_SPRITE.draw(g, x, y, tile, tile);
                 }
             }
         }
 
-        // Dibujar fogatas (encima del piso)
         for (Campfire campfire : level.getCampfires()) {
             Position p = campfire.getPosition();
+
+            if (level.getBoard().getCellType(p) == CellType.PLAYER_ICE) {
+                continue;
+            }
+
             int x = p.getCol() * tile;
             int y = p.getRow() * tile;
 
             if (campfire.isLit()) {
-                // Fogata encendida con llamas dibujadas
                 CAMPFIRE_ON_SPRITE.draw(g, x, y, tile, tile);
             } else {
-                // Fogata apagada
                 CAMPFIRE_OFF_SPRITE.draw(g, x, y, tile, tile);
             }
         }
 
-        // Frutas
         for (Fruit f : level.getFruitManager().getActiveFruits()) {
             if (!f.isCollected()) {
                 int x = f.getPosition().getCol() * tile;
                 int y = f.getPosition().getRow() * tile;
 
-                // Manejo del cactus
                 if (f instanceof Cactus cactus) {
                     Sprite cactusSprite = cactus.isDangerous() ? CACTUS_DANGEROUS_SPRITE : CACTUS_SAFE_SPRITE;
                     cactusSprite.draw(g, x, y, tile, tile);
                 } else {
-                    // Otras frutas
                     f.render(g, tile);
                 }
 
-                // Indicador de congelado
                 if (f.isFrozen()) {
                     g.setColor(new Color(100, 150, 255, 100));
                     g.fillRect(x, y, tile, tile);
@@ -197,36 +254,34 @@ public class PlayingState implements GameState {
             }
         }
 
-        // Jugadores
         List<Player> players = level.getPlayers();
         for (Player p : players) {
             p.render(g, tile);
         }
 
-        //  Enemigos
         for (Enemy e : level.getEnemies()) {
             e.render(g, tile);
         }
 
-        // Puntaje + Timer
         if (!players.isEmpty()) {
             g.setFont(new Font("Arial", Font.BOLD, 18));
 
-            // Score
             g.setColor(Color.WHITE);
-            g.drawString("Score: " + players.getFirst().getScore(), 10, 25);
+            g.drawString("P1: " + players.get(0).getScore(), 10, 25);
 
-            // Timer
+            if (players.size() > 1) {
+                g.drawString("P2: " + players.get(1).getScore(), 10, 50);
+            }
+
             int remainingTicks = TIME_LIMIT - timerTicks;
             int minutes = remainingTicks / 3600;
             int seconds = (remainingTicks % 3600) / 60;
 
             String timeText = String.format("Time: %d:%02d", minutes, seconds);
 
-            // Cambio de color por el paso el tiempo
-            if (remainingTicks < 600) { // Menos de 10 segundos
+            if (remainingTicks < 600) {
                 g.setColor(Color.RED);
-            } else if (remainingTicks < 1800) { // Menos de 30 segundos
+            } else if (remainingTicks < 1800) {
                 g.setColor(Color.YELLOW);
             } else {
                 g.setColor(Color.WHITE);
@@ -234,10 +289,8 @@ public class PlayingState implements GameState {
 
             g.drawString(timeText, 200, 25);
 
-            // Mensaje de "TIME UP!"
             if (timeUp) {
-
-                g.setColor(new Color(0, 0, 0, 180)); // Fondo semi-transparente
+                g.setColor(new Color(0, 0, 0, 180));
                 g.fillRect(0, 0, board.getCols() * tile, board.getRows() * tile);
 
                 g.setColor(Color.RED);
@@ -255,11 +308,13 @@ public class PlayingState implements GameState {
                 g.drawString(restart, x, y + 40);
             }
         }
-
     }
 
-    private void placeOrBreakIce() {
-        Player p = level.getPlayers().getFirst();
+    private void placeOrBreakIce(int playerIndex) {
+        List<Player> players = level.getPlayers();
+        if (players.size() <= playerIndex) return;
+
+        Player p = players.get(playerIndex);
         Direction dir = p.getDirection();
 
         if (dir == null || dir == Direction.NONE) return;
@@ -272,17 +327,21 @@ public class PlayingState implements GameState {
 
         CellType firstCell = board.getCellType(next);
 
-        // Si hay una hilera de hielo del jugador, primero descongelamos, luego rompemos
         if (firstCell == CellType.PLAYER_ICE || firstCell == CellType.ICE_BLOCK) {
             unfreezeFruitsInRay(level.getFruitManager().getAllFruits(), next, dir, board);
             breakIceRay(board, next, dir);
             return;
         }
 
-        // Si no, creamos el rayo
         createIceRay(level, start, dir);
     }
 
+    private Campfire getCampfireAt(Position pos) {
+        for (Campfire c : level.getCampfires()) {
+            if (sameCell(c.getPosition(), pos)) return c;
+        }
+        return null;
+    }
 
     private void createIceRay(Level level, Position from, Direction dir) {
         Board board = level.getBoard();
@@ -302,77 +361,71 @@ public class PlayingState implements GameState {
             }
             if (enemyThere) break;
 
-            // Si hay una fogata, detener el rayo
-            CellType cellType = board.getCellType(current);
-            if (cellType == CellType.CAMPFIRE_ON || cellType == CellType.CAMPFIRE_OFF) {
-                break;
+            Campfire cf = getCampfireAt(current);
+            if (cf != null) {
+                if (cf.isLit()) {
+                    cf.extinguish(board);
+                }
+                current = current.translated(dir.getDRow(), dir.getDCol());
+                continue;
             }
+
+            CellType cellType = board.getCellType(current);
 
             if (cellType == CellType.HOT_TILE) {
                 current = current.translated(dir.getDRow(), dir.getDCol());
+                continue;
             }
 
-            // Si encontramos un obstáculo, paramos
             if (CollisionDetector.isBlocked(board, current)) {
                 break;
             }
 
-            if (cellType == CellType.FLOOR) {
+            if (cellType == CellType.FLOOR || cellType == CellType.PILE_SNOW) {
                 board.setCellType(current, CellType.PLAYER_ICE);
             }
 
-            // Si hay fruta en esa celda, se congela
             for (Fruit f : allFruits) {
                 if (!f.isCollected() && !f.isFrozen() && sameCell(f.getPosition(), current)) {
                     f.freeze();
                 }
             }
-            current = current.translated(dir.getDRow(), dir.getDCol());
-        }
-    }
 
-    /**
-     * Maneja la extinción del fuego.
-     */
-    private void checkAndExtinguishCampfire(Position pos, Level level) {
-        for (Campfire campfire : level.getCampfires()) {
-            if (campfire.getPosition().equals(pos)) {
-                campfire.extinguish(level.getBoard());
-                break;
-            }
+            current = current.translated(dir.getDRow(), dir.getDCol());
         }
     }
 
     private void breakIceRay(Board board, Position from, Direction dir) {
         Position current = from;
-        Level level = this.level;
 
         while (board.isInside(current)) {
+
+            Campfire cf = getCampfireAt(current);
+            if (cf != null) {
+                if (cf.isLit()) {
+                    cf.extinguish(board);
+                }
+                current = current.translated(dir.getDRow(), dir.getDCol());
+                continue;
+            }
+
             CellType cell = board.getCellType(current);
 
             if (cell == CellType.PLAYER_ICE || cell == CellType.ICE_BLOCK) {
-                // Mira si hay una fogata en esta posición
-                checkAndExtinguishCampfire(current, level);
-
-                // Romper el hielo normalmente
                 board.setCellType(current, CellType.FLOOR);
                 current = current.translated(dir.getDRow(), dir.getDCol());
             } else {
-                // Si ya no hay hielo, paramos
                 break;
             }
         }
     }
 
-
     private void unfreezeFruitsInRay(List<Fruit> fruits, Position from, Direction dir, Board board) {
-
         Position current = from;
 
         while (board.isInside(current)) {
             CellType cell = board.getCellType(current);
 
-            // Solo recorremos mientras haya hielo del jugador
             if (cell != CellType.PLAYER_ICE) break;
 
             for (Fruit f : fruits) {
@@ -387,31 +440,57 @@ public class PlayingState implements GameState {
 
     @Override
     public void keyPressed(Integer keyCode) {
-        // Jugador 1 con flechas
         if (keyCode == KeyEvent.VK_ESCAPE || keyCode == KeyEvent.VK_P) {
-            game.setState(new PauseState(game, this)); }
-        if (keyCode == KeyEvent.VK_UP)    p1Dir = Direction.UP;
-        if (keyCode == KeyEvent.VK_DOWN)  p1Dir = Direction.DOWN;
-        if (keyCode == KeyEvent.VK_LEFT)  p1Dir = Direction.LEFT;
-        if (keyCode == KeyEvent.VK_RIGHT) p1Dir = Direction.RIGHT;
-        if (keyCode == KeyEvent.VK_SPACE) placeOrBreakIce();
+            game.setState(new PauseState(game, this));
+        }
 
+        // Controles de humanos solo si ese jugador es humano en este modo
+
+        // P1 humano en PLAYER, PVP, PVM
+        if (mode != GameMode.MVM) {
+            if (keyCode == KeyEvent.VK_UP)    p1Dir = Direction.UP;
+            if (keyCode == KeyEvent.VK_DOWN)  p1Dir = Direction.DOWN;
+            if (keyCode == KeyEvent.VK_LEFT)  p1Dir = Direction.LEFT;
+            if (keyCode == KeyEvent.VK_RIGHT) p1Dir = Direction.RIGHT;
+            if (keyCode == KeyEvent.VK_SPACE) placeOrBreakIce(0);
+        }
+
+        // P2 humano solo en PVP
+        if (mode == GameMode.PVP) {
+            if (keyCode == KeyEvent.VK_W) p2Dir = Direction.UP;
+            if (keyCode == KeyEvent.VK_S) p2Dir = Direction.DOWN;
+            if (keyCode == KeyEvent.VK_A) p2Dir = Direction.LEFT;
+            if (keyCode == KeyEvent.VK_D) p2Dir = Direction.RIGHT;
+            if (keyCode == KeyEvent.VK_V) placeOrBreakIce(1);
+        }
     }
 
     @Override
     public void keyReleased(Integer keyCode) {
-        // Si sueltas una tecla que corresponde a la dirección actual, paramos
-        if ((keyCode == KeyEvent.VK_UP    && p1Dir == Direction.UP) ||
-                (keyCode == KeyEvent.VK_DOWN  && p1Dir == Direction.DOWN) ||
-                (keyCode == KeyEvent.VK_LEFT  && p1Dir == Direction.LEFT) ||
-                (keyCode == KeyEvent.VK_RIGHT && p1Dir == Direction.RIGHT)) {
-            p1Dir = Direction.NONE;
+        // P1 humano en PLAYER, PVP, PVM
+        if (mode != GameMode.MVM) {
+            if ((keyCode == KeyEvent.VK_UP    && p1Dir == Direction.UP) ||
+                    (keyCode == KeyEvent.VK_DOWN  && p1Dir == Direction.DOWN) ||
+                    (keyCode == KeyEvent.VK_LEFT  && p1Dir == Direction.LEFT) ||
+                    (keyCode == KeyEvent.VK_RIGHT && p1Dir == Direction.RIGHT)) {
+                p1Dir = Direction.NONE;
+            }
+        }
+
+        // P2 humano solo en PVP
+        if (mode == GameMode.PVP) {
+            if ((keyCode == KeyEvent.VK_W && p2Dir == Direction.UP) ||
+                    (keyCode == KeyEvent.VK_S && p2Dir == Direction.DOWN) ||
+                    (keyCode == KeyEvent.VK_A && p2Dir == Direction.LEFT) ||
+                    (keyCode == KeyEvent.VK_D && p2Dir == Direction.RIGHT)) {
+                p2Dir = Direction.NONE;
+            }
         }
     }
+
     public int getTimerTicks() { return timerTicks; }
     public void setTimerTicks(int ticks) { this.timerTicks = ticks; }
     public Level getLevel() { return level; }
     public int getCurrentLevelNumber() { return this.currentLevelNumber; }
     public boolean isCustomLevel() { return this.currentLevelNumber == -1; }
-
 }

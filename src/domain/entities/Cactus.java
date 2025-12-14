@@ -10,7 +10,7 @@ import java.util.List;
 public class Cactus extends Fruit {
 
     public static final int CACTUS_SCORE = 250;
-    private static final int TICKS_PER_CYCLE = 1800;
+    private static final int TICKS_PER_CYCLE = 600;
     private int tickCounter = 0;
     private boolean hasSpikesDangerous = false;
 
@@ -22,6 +22,8 @@ public class Cactus extends Fruit {
     public int getPoints() {
         return CACTUS_SCORE;
     }
+
+    public boolean getHasSpikesDangerous() {return hasSpikesDangerous;}
 
     @Override
     public void update(Level level) {

@@ -30,6 +30,13 @@ public class CollisionDetector {
             for (Fruit f : fruits) {
                 if (f.isCollected() || f.isFrozen()) continue;
 
+                if (f instanceof Cactus cactus && cactus.getHasSpikesDangerous()) {
+                    if (sameCell(cactus.getPosition(), p.getPosition())) {
+                        p.onHitByEnemy(cactus);
+                        continue;
+                    }
+                }
+
                 if (sameCell(p.getPosition(), f.getPosition())) {
                     f.collect();
                     p.addScore(f.getPoints());
@@ -37,6 +44,7 @@ public class CollisionDetector {
             }
         }
     }
+
 
     /**
      * Jugador + enemigos: si están en la misma celda,
@@ -55,17 +63,36 @@ public class CollisionDetector {
     /**
      * Jugador + fogatas: si el jugador está en una fogata encendida, muere
      */
-    public static void checkPlayerCampfire(List<Player> players, Board board) {
+    public static void checkPlayerCampfire(List<Player> players, List<Campfire> campfires) {
         for (Player p : players) {
             Position pos = p.getPosition();
-            CellType cellType = board.getCellType(pos);
 
-            if (cellType == CellType.CAMPFIRE_ON) {
-                p.onHitByEnemy(null); // Eliminar al jugador
+            for (Campfire c : campfires) {
+                if (c.isLit() && sameCell(pos, c.getPosition())) {
+                    p.onHitByEnemy(null);
+                }
             }
         }
     }
 
+    /**
+     * Jugador + cactus: si está en la misma celda y el cactus está peligroso, muere
+     */
+    public static void checkPlayerCactus(List<Player> players, List<Fruit> fruits) {
+        for (Player p : players) {
+            Position pPos = p.getPosition();
+
+            for (Fruit f : fruits) {
+                if (f.isCollected() || f.isFrozen()) continue;
+
+                if (f instanceof Cactus cactus) {
+                    if (cactus.isDangerous() && sameCell(pPos, cactus.getPosition())) {
+                        p.onHitByEnemy(null);
+                    }
+                }
+            }
+        }
+    }
 
     private static boolean intersects(Player p, Enemy e) {
         return sameCell(p.getPosition(), e.getPosition());

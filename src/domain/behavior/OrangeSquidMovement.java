@@ -19,7 +19,7 @@ import domain.utils.Direction;
 public class OrangeSquidMovement implements MovementBehavior {
 
     private int tickCounter = 0;
-    private static final int TICKS_PER_MOVE = 16;
+    private static final int TICKS_PER_MOVE = 22;
 
     // Control de destrucción de hielo
     private boolean isBreakingIce = false;
@@ -49,28 +49,32 @@ public class OrangeSquidMovement implements MovementBehavior {
             return; // No hay jugadores, nos quedamos quietos
         }
 
+        Position current = enemy.getPosition();
+        Position playerPos = nearestPlayer.getPosition();
+        Board board = level.getBoard();
+
         // Calculamos la dirección hacia el jugador
-        Direction bestDirection = calculateDirectionToPlayer(enemy.getPosition(), nearestPlayer.getPosition());
+        Direction bestDirection = calculateDirectionToPlayer(current, playerPos);
 
         if (bestDirection == Direction.NONE) {
             return; // Ya estamos en la misma posición (no debería pasar)
         }
 
         // Calculamos la siguiente posición
-        Position current = enemy.getPosition();
         Position next = current.translated(bestDirection.getDRow(), bestDirection.getDCol());
-
-        Board board = level.getBoard();
 
         // Verificamos si la siguiente posición es un bloque de hielo
         if (board.isInside(next) && isIceBlock(board, next)) {
-            // Encontramos hielo, empezamos a romperlo
-            startBreakingIce(next, bestDirection, enemy);
+            // Si hay una alternativa caminable que nos acerque, la preferimos
+            if (!tryMoveWithoutBreakingIce(level, enemy, nearestPlayer)) {
+                // Encontramos hielo, empezamos a romperlo
+                startBreakingIce(next, bestDirection, enemy);
+            }
             return;
         }
 
         // Si la celda es caminable, nos movemos
-        if (board.isWalkable(next)) {
+        if (board.isWalkable(next) || isPlayerCell(level, next)) {
             enemy.setPosition(next);
             enemy.setDirection(bestDirection);
         } else {
@@ -87,6 +91,8 @@ public class OrangeSquidMovement implements MovementBehavior {
         int minDistance = Integer.MAX_VALUE;
 
         for (Player player : level.getPlayers()) {
+            if (player.isDead()) continue;
+
             int distance = manhattanDistance(enemy.getPosition(), player.getPosition());
             if (distance < minDistance) {
                 minDistance = distance;
@@ -95,6 +101,14 @@ public class OrangeSquidMovement implements MovementBehavior {
         }
 
         return nearest;
+    }
+
+    private boolean isPlayerCell(Level level, Position pos) {
+        for (Player p : level.getPlayers()) {
+            if (p.isDead()) continue;
+            if (p.getPosition().equals(pos)) return true;
+        }
+        return false;
     }
 
     /**
@@ -158,7 +172,7 @@ public class OrangeSquidMovement implements MovementBehavior {
             // Terminamos de romper el hielo
             Board board = level.getBoard();
             if (board.isInside(iceBeingBroken) && isIceBlock(board, iceBeingBroken)) {
-                board.setCellType(iceBeingBroken, CellType.EMPTY);
+                board.setCellType(iceBeingBroken, CellType.FLOOR);
             }
 
             // Reiniciamos el estado
@@ -176,29 +190,93 @@ public class OrangeSquidMovement implements MovementBehavior {
         Position playerPos = targetPlayer.getPosition();
         Board board = level.getBoard();
 
-        int rowDiff = playerPos.getRow() - current.getRow();
-        int colDiff = playerPos.getCol() - current.getCol();
+        Direction[] directions = {
+                Direction.UP,
+                Direction.DOWN,
+                Direction.LEFT,
+                Direction.RIGHT
+        };
 
-        // Si estábamos intentando movernos verticalmente, probamos horizontal
-        if (Math.abs(rowDiff) >= Math.abs(colDiff)) {
-            Direction altDir = colDiff > 0 ? Direction.RIGHT : (colDiff < 0 ? Direction.LEFT : Direction.NONE);
-            if (altDir != Direction.NONE) {
-                Position altNext = current.translated(altDir.getDRow(), altDir.getDCol());
-                if (board.isWalkable(altNext)) {
-                    enemy.setPosition(altNext);
-                    enemy.setDirection(altDir);
+        int currentDist = manhattanDistance(current, playerPos);
+
+        Direction bestWalkDir = Direction.NONE;
+        int bestWalkDistance = Integer.MAX_VALUE;
+
+        Direction bestIceDir = Direction.NONE;
+        int bestIceDistance = Integer.MAX_VALUE;
+        Position bestIcePos = null;
+
+        for (Direction dir : directions) {
+            Position next = current.translated(dir.getDRow(), dir.getDCol());
+
+            if (!board.isInside(next)) continue;
+
+            if (board.isWalkable(next) || isPlayerCell(level, next)) {
+                int dist = manhattanDistance(next, playerPos);
+                if (dist < bestWalkDistance) {
+                    bestWalkDistance = dist;
+                    bestWalkDir = dir;
                 }
-            }
-        } else {
-            // Estábamos intentando movernos horizontalmente, probamos vertical
-            Direction altDir = rowDiff > 0 ? Direction.DOWN : (rowDiff < 0 ? Direction.UP : Direction.NONE);
-            if (altDir != Direction.NONE) {
-                Position altNext = current.translated(altDir.getDRow(), altDir.getDCol());
-                if (board.isWalkable(altNext)) {
-                    enemy.setPosition(altNext);
-                    enemy.setDirection(altDir);
+            } else if (isIceBlock(board, next)) {
+                int dist = manhattanDistance(next, playerPos);
+                if (dist < bestIceDistance) {
+                    bestIceDistance = dist;
+                    bestIceDir = dir;
+                    bestIcePos = next;
                 }
             }
         }
+
+        if (bestWalkDir != Direction.NONE) {
+            Position next = current.translated(bestWalkDir.getDRow(), bestWalkDir.getDCol());
+            enemy.setPosition(next);
+            enemy.setDirection(bestWalkDir);
+            return;
+        }
+
+        if (bestIcePos != null && bestIceDistance <= currentDist) {
+            startBreakingIce(bestIcePos, bestIceDir, enemy);
+        }
+    }
+
+    private boolean tryMoveWithoutBreakingIce(Level level, Enemy enemy, Player targetPlayer) {
+        Position current = enemy.getPosition();
+        Position playerPos = targetPlayer.getPosition();
+        Board board = level.getBoard();
+
+        Direction[] directions = {
+                Direction.UP,
+                Direction.DOWN,
+                Direction.LEFT,
+                Direction.RIGHT
+        };
+
+        int currentDist = manhattanDistance(current, playerPos);
+
+        Direction bestDir = Direction.NONE;
+        int bestDistance = Integer.MAX_VALUE;
+
+        for (Direction dir : directions) {
+            Position next = current.translated(dir.getDRow(), dir.getDCol());
+
+            if (!board.isInside(next)) continue;
+
+            if (board.isWalkable(next) || isPlayerCell(level, next)) {
+                int dist = manhattanDistance(next, playerPos);
+                if (dist < bestDistance) {
+                    bestDistance = dist;
+                    bestDir = dir;
+                }
+            }
+        }
+
+        if (bestDir != Direction.NONE && bestDistance <= currentDist) {
+            Position next = current.translated(bestDir.getDRow(), bestDir.getDCol());
+            enemy.setPosition(next);
+            enemy.setDirection(bestDir);
+            return true;
+        }
+
+        return false;
     }
 }

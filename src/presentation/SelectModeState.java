@@ -156,25 +156,22 @@ public class SelectModeState implements GameState {
     public void mouseClicked(Integer x, Integer y) {
 
         // Click PvP
-        int optionSelected;
         if (x >= optX && x <= optX + optW &&
                 y >= optY && y <= optY + optH) {
-            optionSelected = 1;
+            int optionSelected = 1;
             game.setState(new ChooseFlavourState(game, optionSelected));
         }
 
         // Click PvM
         if (x >= optX && x <= optX + optW &&
                 y >= optY + optSpacing && y <= optY + optSpacing + optH) {
-            optionSelected = 2;
-            game.setState(new ChooseFlavourState(game, optionSelected));
+            game.setState(new ChooseAIProfileState(game, 2));
         }
 
         // Click MvM
         if (x >= optX && x <= optX + optW &&
                 y >= optY + optSpacing * 2 && y <= optY + optSpacing * 2 + optH) {
-            optionSelected = 3;
-            game.setState(new ChooseFlavourState(game, optionSelected));
+            game.setState(new ChooseAIProfileState(game, 3));
         }
 
         // Click BACK

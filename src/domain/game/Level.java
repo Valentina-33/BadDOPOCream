@@ -63,7 +63,7 @@ public class Level {
         updateFruits();
         CollisionDetector.checkPlayerFruit(players, fruitManager.getActiveFruits());
         CollisionDetector.checkPlayerEnemy(players, enemies);
-        CollisionDetector.checkPlayerCampfire(players, board); // NUEVO
+        CollisionDetector.checkPlayerCampfire(players, campfires); // NUEVO
         updateFruitPhase();
         updateEnemies();
         updateCampfires();
@@ -108,6 +108,8 @@ public class Level {
         }
 
         for (Player p : players) {
+            if (p.isDead()) continue;
+
             Direction inputDir = playerInputs.getOrDefault(p, Direction.NONE);
             Direction lastInput = lastInputs.getOrDefault(p, Direction.NONE);
 
@@ -124,20 +126,23 @@ public class Level {
 
                 p.setDirection(inputDir);
                 if (wasStopped) {
-                    return;
-                    //Estaba quieto: solo girar, sin avanzar todavía
+                    // Estaba quieto: solo girar, sin avanzar todavía
+                    lastInputs.put(p, inputDir);
+                    continue;
                 } else {
-                    //Ya venía con una dirección pulsada: girar y moverse en el mismo frame
+                    // Ya venía con una dirección pulsada: girar y moverse en el mismo frame
                     movePlayer(p, inputDir);
                 }
             } else {
                 // Caso 2: la dirección pedida coincide con la que ya mira, avanzar normal
                 movePlayer(p, inputDir);
             }
+
             // Actualizamos el último input visto para este jugador
             lastInputs.put(p, inputDir);
         }
     }
+
 
     private void movePlayer(Player p, Direction dir){
         if (dir == null || dir == Direction.NONE) { return; }
@@ -162,4 +167,18 @@ public class Level {
             campfire.update(this);
         }
     }
+
+    /**
+     * Retorna true cuando ya se terminaron todas las fases de frutas del nivel.
+     */
+    public boolean isLevelCompleted() {
+        if (!fruitManager.allActiveCollected()) return false;
+
+        if (fruitPhases.isEmpty()) {
+            return true;
+        }
+
+        return currentPhaseIndex + 1 >= fruitPhases.size();
+    }
+
 }

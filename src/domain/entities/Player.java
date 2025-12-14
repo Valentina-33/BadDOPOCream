@@ -14,6 +14,10 @@ public class Player extends Entity {
     private int score = 0;
     private Direction direction = Direction.DOWN;
 
+    private boolean dead = false;
+    private int invulnerableTicks = 0;
+    private static final int INVULNERABLE_TIME = 30;
+
     private static final AnimatedSprite PLAYER_SPRITE;
 
     static {
@@ -46,6 +50,18 @@ public class Player extends Entity {
     public void addScore(int pts) { this.score += pts; }
     public void setScore(int playerScore) { this.score = playerScore; }
 
+    public boolean isDead() { return dead; }
+
+    public void tick() {
+        if (invulnerableTicks > 0) invulnerableTicks--;
+    }
+
     // Maneja la muerte del jugador
-    public void onHitByEnemy(Enemy e) { }
+    public void onHitByEnemy(Entity e) {
+        if (dead) return;
+        if (invulnerableTicks > 0) return;
+
+        dead = true;
+        invulnerableTicks = INVULNERABLE_TIME;
+    }
 }
