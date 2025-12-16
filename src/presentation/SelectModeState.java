@@ -120,7 +120,7 @@ public class SelectModeState implements GameState {
             g.drawImage(kindScoop, titleX, titleY, titleWidth, titleHeight, null);
         }
 
-        if (P != null)   g.drawImage(P,   optX, optY, 65, optH, null);
+        if (P != null)   g.drawImage(P,   optX, optY, 45, optH, null);
         if (PvP != null) g.drawImage(PvP, optX, optY + optSpacing, optW, optH, null);
         if (PvM != null) g.drawImage(PvM, optX, optY + optSpacing * 2, optW, optH, null);
         if (MvM != null) g.drawImage(MvM, optX, optY + optSpacing * 3, optW, optH, null);

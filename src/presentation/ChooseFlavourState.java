@@ -30,14 +30,8 @@ public class ChooseFlavourState implements GameState {
     private Image chooseFlavour;
     private Image threeIceCreams;
 
-    private Image vanillaIcon;
-    private Image strawberryIcon;
-    private Image chocolateIcon;
-
-    private final int topBoxX = 32;
-    private final int topBoxY = 24;
-    private final int topBoxWidth = 512;
-    private final int topBoxHeight = 320;
+    private Image player1Icon;
+    private Image player2Icon;
 
     private final int bottomBoxX = 32;
     private final int bottomBoxY = 360;
@@ -49,16 +43,6 @@ public class ChooseFlavourState implements GameState {
     private final int backBtnX = bottomBoxX + (bottomBoxWidth - backBtnWidth) / 2;
     private final int backBtnY = bottomBoxY + (bottomBoxHeight - backBtnHeight) / 2;
 
-    private final int iceCreamWidth = 230;
-    private final int iceCreamHeight = 230;
-    private final int iceCreamX = 170;
-    private final int iceCreamY = 90;
-
-    private final int cardW = 140;
-    private final int cardH = 55;
-    private final int cardX = topBoxX + 40;
-    private final int cardY = topBoxY + 95;
-    private final int cardGap = 15;
 
     public ChooseFlavourState(Game game, int optionSelected) {
         this(game, optionSelected, null, null);
@@ -73,10 +57,8 @@ public class ChooseFlavourState implements GameState {
         this.flavourP1 = (flavourP1 != null) ? flavourP1 : Flavour.VANILLA;
         this.flavourP2 = (flavourP2 != null) ? flavourP2 : Flavour.VANILLA;
 
-        selectingIndex = needsTwoFlavours() ? 1 : 1;
         loadAssets();
     }
-
 
     public ChooseFlavourState(Game game, int optionSelected, AIProfile aiProfileP1, AIProfile aiProfileP2) {
         this.game = game;
@@ -84,7 +66,6 @@ public class ChooseFlavourState implements GameState {
         this.aiProfileP1 = aiProfileP1;
         this.aiProfileP2 = aiProfileP2;
 
-        selectingIndex = needsTwoFlavours() ? 1 : 1;
         loadAssets();
     }
 
@@ -101,9 +82,8 @@ public class ChooseFlavourState implements GameState {
             chooseFlavour = new ImageIcon(Objects.requireNonNull(getClass().getResource("/choose-flavour.png"))).getImage();
             threeIceCreams = new ImageIcon(Objects.requireNonNull(getClass().getResource("/joined-icecreams.png"))).getImage();
 
-            vanillaIcon = new ImageIcon(Objects.requireNonNull(getClass().getResource("/vanilla-down.gif"))).getImage();
-            strawberryIcon = new ImageIcon(Objects.requireNonNull(getClass().getResource("/strawberry-down.gif"))).getImage();
-            chocolateIcon = new ImageIcon(Objects.requireNonNull(getClass().getResource("/chocolate-down.gif"))).getImage();
+            player1Icon = new ImageIcon(Objects.requireNonNull(getClass().getResource("/player-1.png"))).getImage();
+            player2Icon = new ImageIcon(Objects.requireNonNull(getClass().getResource("/player-2.png"))).getImage();
 
         } catch (Exception e) {
             System.err.println("Error cargando recursos: " + e.getMessage());
@@ -119,6 +99,10 @@ public class ChooseFlavourState implements GameState {
             g.fillRect(0, 0, GamePanel.WIDTH, GamePanel.HEIGHT);
         }
 
+        int topBoxY = 24;
+        int topBoxHeight = 320;
+        int topBoxWidth = 512;
+        int topBoxX = 32;
         if (playerBg != null) {
             g.drawImage(playerBg, topBoxX, topBoxY, topBoxWidth, topBoxHeight, null);
         }
@@ -132,18 +116,24 @@ public class ChooseFlavourState implements GameState {
         }
 
         if (threeIceCreams != null) {
+            int iceCreamHeight = 230;
+            int iceCreamWidth = 230;
+            int iceCreamY = 90;
+            int iceCreamX = 170;
             g.drawImage(threeIceCreams, iceCreamX, iceCreamY, iceCreamWidth, iceCreamHeight, null);
         }
 
-        g.setFont(new Font("Arial", Font.BOLD, 16));
-        g.setColor(Color.BLACK);
-
-        String who = needsTwoFlavours() ? ("PLAYER " + selectingIndex) : "PLAYER";
-        g.drawString("SELECT FOR " + who, cardX, cardY - 10);
-
-        drawCard(g, Flavour.VANILLA, "VANILLA", vanillaIcon, cardY, isCurrentSelected(Flavour.VANILLA));
-        drawCard(g, Flavour.STRAWBERRY, "STRAWBERRY", strawberryIcon, cardY + (cardH + cardGap), isCurrentSelected(Flavour.STRAWBERRY));
-        drawCard(g, Flavour.CHOCOLATE, "CHOCOLATE", chocolateIcon, cardY + 2 * (cardH + cardGap), isCurrentSelected(Flavour.CHOCOLATE));
+        // Mostrar imagen del jugador que está seleccionando (abajo a la izquierda)
+        if (needsTwoFlavours()) {
+            Image currentPlayerIcon = (selectingIndex == 1) ? player1Icon : player2Icon;
+            if (currentPlayerIcon != null) {
+                int playerIconWidth = 120;
+                int playerIconHeight = 40;
+                int playerIconX = topBoxX + 40;
+                int playerIconY = topBoxY + topBoxHeight - playerIconHeight - 20;
+                g.drawImage(currentPlayerIcon, playerIconX, playerIconY, playerIconWidth, playerIconHeight, null);
+            }
+        }
 
         if (buttonBackBg != null) {
             g.drawImage(buttonBackBg, bottomBoxX, bottomBoxY, bottomBoxWidth, bottomBoxHeight, null);
@@ -151,35 +141,6 @@ public class ChooseFlavourState implements GameState {
 
         if (backButton != null) {
             g.drawImage(backButton, backBtnX, backBtnY, backBtnWidth, backBtnHeight, null);
-        }
-    }
-
-    private boolean isCurrentSelected(Flavour f) {
-        if (!needsTwoFlavours()) return flavourP1 == f;
-        if (selectingIndex == 1) return flavourP1 == f;
-        return flavourP2 == f;
-    }
-
-    private void drawCard(Graphics2D g, Flavour f, String label, Image icon, int y, boolean selected) {
-        g.setColor(new Color(255, 255, 255, 70));
-        g.fillRect(cardX, y, cardW, cardH);
-
-        g.setColor(Color.WHITE);
-        g.drawRect(cardX, y, cardW, cardH);
-
-        if (icon != null) {
-            g.drawImage(icon, cardX + 8, y + 6, 42, 42, null);
-        }
-
-        g.setFont(new Font("Arial", Font.BOLD, 14));
-        g.setColor(Color.WHITE);
-        g.drawString(label, cardX + 58, y + 32);
-
-        if (selected) {
-            g.setColor(new Color(0, 0, 0, 120));
-            g.fillRect(cardX, y, cardW, cardH);
-            g.setColor(Color.YELLOW);
-            g.drawRect(cardX + 2, y + 2, cardW - 4, cardH - 4);
         }
     }
 
@@ -197,6 +158,7 @@ public class ChooseFlavourState implements GameState {
 
     @Override
     public void mouseClicked(Integer x, Integer y) {
+
         if (x >= backBtnX && x <= backBtnX + backBtnWidth &&
                 y >= backBtnY && y <= backBtnY + backBtnHeight) {
 
@@ -208,44 +170,48 @@ public class ChooseFlavourState implements GameState {
             return;
         }
 
+        // Detectar click en los helados
         Flavour clicked = clickedFlavour(x, y);
         if (clicked != null) {
+
             if (!needsTwoFlavours()) {
                 flavourP1 = clicked;
+                goNext();
             } else {
-                if (selectingIndex == 1) flavourP1 = clicked;
-                else flavourP2 = clicked;
-
                 if (selectingIndex == 1) {
+                    flavourP1 = clicked;
                     selectingIndex = 2;
                 } else {
+                    flavourP2 = clicked;
                     goNext();
                 }
-            }
-            return;
-        }
-
-        if (x >= iceCreamX && x <= iceCreamX + iceCreamWidth &&
-                y >= iceCreamY && y <= iceCreamY + iceCreamHeight) {
-            if (needsTwoFlavours() && selectingIndex == 1) {
-                selectingIndex = 2;
-            } else {
-                goNext();
             }
         }
     }
 
     private Flavour clickedFlavour(int x, int y) {
-        if (x < cardX || x > cardX + cardW) return null;
+        // Detectar click en los helados de la imagen grande
+        final int chocolateWidth = 75;
+        final int vanillaX = 245;
+        final int vanillaWidth = 80;
+        final int strawberryX = 325;
+        final int strawberryWidth = 75;
+        final int iceCreamClickY = 90;
+        final int iceCreamClickHeight = 180;
 
-        int y1 = cardY;
-        int y2 = cardY + (cardH + cardGap);
-        int y3 = cardY + 2 * (cardH + cardGap);
-
-        if (y >= y1 && y <= y1 + cardH) return Flavour.VANILLA;
-        if (y >= y2 && y <= y2 + cardH) return Flavour.STRAWBERRY;
-        if (y >= y3 && y <= y3 + cardH) return Flavour.CHOCOLATE;
-
+        if (y >= iceCreamClickY && y <= iceCreamClickY + iceCreamClickHeight) {
+            // Rangos para detectar clicks en cada helado
+            int chocolateX = 170;
+            if (x >= chocolateX && x <= chocolateX + chocolateWidth) {
+                return Flavour.CHOCOLATE;
+            }
+            if (x >= vanillaX && x <= vanillaX + vanillaWidth) {
+                return Flavour.VANILLA;
+            }
+            if (x >= strawberryX && x <= strawberryX + strawberryWidth) {
+                return Flavour.STRAWBERRY;
+            }
+        }
         return null;
     }
 

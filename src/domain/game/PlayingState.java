@@ -127,8 +127,13 @@ public class PlayingState implements GameState {
             return;
         }
 
-        Map<Player, Direction> inputs = new HashMap<>();
+        // Actualizar animaciones de muerte
         List<Player> players = level.getPlayers();
+        for (Player p : players) {
+            p.update();
+        }
+
+        Map<Player, Direction> inputs = new HashMap<>();
 
         if (!players.isEmpty()) {
             Player p1 = players.get(0);
@@ -152,15 +157,22 @@ public class PlayingState implements GameState {
 
         level.update(inputs);
 
+        // Verificar game over
         boolean anyAlive = false;
-        for (Player p : level.getPlayers()) {
+        boolean allDeathAnimationsFinished = true;
+
+        for (Player p : players) {
             if (!p.isDead()) {
                 anyAlive = true;
-                break;
+            }
+            // Si un jugador está muerto pero su animación NO ha terminado
+            if (p.isDead() && !p.isDeathAnimationFinished()) {
+                allDeathAnimationsFinished = false;
             }
         }
 
-        if (!anyAlive) {
+        // Mostrar GameOver cuando todos mueran y termine animación
+        if (!anyAlive && allDeathAnimationsFinished) {
             game.setState(new GameOverState(game, this, currentLevelNumber));
             return;
         }

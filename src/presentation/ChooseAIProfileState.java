@@ -56,8 +56,6 @@ public class ChooseAIProfileState implements GameState {
     // Opciones de perfil
     private final int optX = topBoxX + 40;
     private final int optY = topBoxY + 100;
-    private final int optW = 120;
-    private final int optH = 40;
     private final int optSpacing = 55;
 
     // Helados (3 scoops)

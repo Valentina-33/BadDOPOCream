@@ -4,7 +4,11 @@ import presentation.GamePanel;
 
 import java.awt.*;
 import java.awt.event.KeyEvent;
+import java.util.Objects;
+
 import presentation.MenuState;
+
+import javax.swing.*;
 
 /**
  * Estado de derrota (Game Over) cuando el jugador muere o se acaba el tiempo.
@@ -15,10 +19,26 @@ public class GameOverState implements GameState {
     private final GameState previousState;
     private final int levelNumber;
 
+    private Image gameOverImage;
+
+    private final int boxWidth = 440;
+    private final int boxHeight = 340;
+    private final int boxX = (GamePanel.WIDTH - boxWidth) / 2;
+    private final int boxY = (GamePanel.HEIGHT - boxHeight) / 2;
+
     public GameOverState(Game game, GameState prev, int levelNumber) {
         this.game = game;
         this.previousState = prev;
         this.levelNumber = levelNumber;
+        loadAssets();
+    }
+
+    private void loadAssets() {
+        try {
+            gameOverImage = new ImageIcon(Objects.requireNonNull(getClass().getResource("/game-over-state.png"))).getImage();
+        } catch (Exception e) {
+            System.err.println("Error cargando imagen de pérdida: " + e.getMessage());
+        }
     }
 
     @Override
@@ -26,28 +46,17 @@ public class GameOverState implements GameState {
 
     @Override
     public void render(Graphics2D g) {
-        previousState.render(g); // pinta el juego debajo
+        previousState.render(g);
 
-        Integer width = GamePanel.WIDTH;
-        Integer height = GamePanel.HEIGHT;
-
-        g.setColor(new Color(0, 0, 0, 180));
-        g.fillRect(0, 0, width, height);
-
-        g.setColor(Color.RED);
-        g.setFont(new Font("Arial", Font.BOLD, 42));
-        g.drawString("GAME OVER", 120, 210);
-
-        g.setColor(Color.WHITE);
-        g.setFont(new Font("Arial", Font.PLAIN, 18));
-        g.drawString("Press R to restart", 150, 260);
-        g.drawString("Press ESC to go to menu", 130, 290);
+        if (gameOverImage != null) {
+            g.drawImage(gameOverImage, boxX, boxY, boxWidth, boxHeight, null);
+        }
     }
 
     @Override
     public void keyPressed(Integer key) {
         if (key == KeyEvent.VK_R) {
-            if (levelNumber == -1) return; // nivel importado, aquí no sabemos reiniciarlo por número
+            if (levelNumber == -1) return; // nivel importado
             game.setState(new PlayingState(game, levelNumber));
         }
 
