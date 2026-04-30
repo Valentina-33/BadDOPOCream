@@ -46,8 +46,31 @@ public class LevelLoader {
                 parseCell(ch, pos, board, players, enemies, fruits, campfires);
             }
         }
+        blockIglooArea(board);
 
         return new Level(board, players, enemies, fruits, campfires, fruitPhases);
+    }
+
+    private static void blockIglooArea(Board board) {
+        for (int r = 0; r < board.getRows(); r++) {
+            for (int c = 0; c < board.getCols(); c++) {
+                // Si encontramos la esquina del iglú
+                if (board.getCellType(new Position(r, c)) == CellType.IGLOO_AREA) {
+
+                    // Llenamos un cuadrado de 4x4 como IGLOO_AREA (que no es caminable)
+                    // Verificamos límites para no salirnos del mapa
+                    for (int i = 0; i < 4; i++) {
+                        for (int j = 0; j < 4; j++) {
+                            Position wallPos = new Position(r + i, c + j);
+                            if (board.isInside(wallPos)) {
+                                board.setCellType(wallPos, CellType.IGLOO_AREA);
+                            }
+                        }
+                    }
+                    return; // Terminamos apenas encontramos el iglú
+                }
+            }
+        }
     }
 
     // Construye el nivel con las letras de los mapas

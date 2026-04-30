@@ -2,6 +2,7 @@ package persistence;
 
 import domain.game.Game;
 import domain.game.PlayingState;
+import domain.game.PlayingStateBuilder; // Importamos el Builder
 import java.io.*;
 
 /**
@@ -17,11 +18,20 @@ public class GameLoader {
         try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
             GameSaver.SaveData data = (GameSaver.SaveData) ois.readObject();
 
-            // Crear nuevo PlayingState con los datos cargados
-            PlayingState state = new PlayingState(game, data.levelNumber);
+            // --- CORRECCIÓN AQUÍ ---
+            // Usamos el Builder para crear la instancia base del nivel guardado
+            PlayingState state = new PlayingStateBuilder(game)
+                    .withLevelNumber(data.levelNumber)
+                    // Si tu SaveData tuviera el modo, haríamos: .withMode(data.gameMode)
+                    .build();
 
+            // Restauramos los datos dinámicos (Tiempo y Puntaje)
             state.setTimerTicks(data.timerTicks);
-            state.getLevel().getPlayers().getFirst().setScore(data.playerScore);
+
+            // Aseguramos que el nivel tenga jugadores antes de setear score
+            if (!state.getLevel().getPlayers().isEmpty()) {
+                state.getLevel().getPlayers().getFirst().setScore(data.playerScore);
+            }
 
             return state;
 

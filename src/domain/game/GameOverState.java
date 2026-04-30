@@ -57,7 +57,8 @@ public class GameOverState implements GameState {
     public void keyPressed(Integer key) {
         if (key == KeyEvent.VK_R) {
             if (levelNumber == -1) return; // nivel importado
-            game.setState(new PlayingState(game, levelNumber));
+            PlayingState newState = new PlayingStateBuilder(game).withLevelNumber(levelNumber).build();
+            game.setState(newState);
         }
 
         if (key == KeyEvent.VK_ESCAPE) {

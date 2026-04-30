@@ -5,10 +5,10 @@ W...III....III...W
 W...INI....INI...W
 W...III....III...W
 W.T..........Z...W
-W................W
+W...HHHHHHHHHH...W
 W..Z....NN.......W
 WM......NN.......W
-W.............Q..W
+W...HHHHHHHHHHQ..W
 W................W
 W...III....III...W
 W...INI....INI...W

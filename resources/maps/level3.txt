@@ -4,7 +4,7 @@ W.RXRX.IIII.RXRX.W
 W.I..I.C..C.I..I.W
 W.I..I.C..C.I..I.W
 W.RXRX.YYYY.RXRX.W
-W..HHHHHHHHHHHH..W
+W................W
 W..F....CC....F..W
 W......F..F......W
 W..F...P......F..W

@@ -67,10 +67,10 @@ public class MenuState implements GameState {
             g.fillRect(0, 0, width, height);
         }
 
-        int buttonWidth = 250;
+        int buttonWidth = 400;
         int btnX = (width - buttonWidth) / 2;
-        int buttonHeight = 65;
-        int btnY = height - buttonHeight - 50;
+        int buttonHeight = 75;
+        int btnY = height - buttonHeight - 70;
 
         playButtonRect = new Rectangle(btnX, btnY, buttonWidth, buttonHeight);
 
@@ -80,7 +80,7 @@ public class MenuState implements GameState {
 
         if (textButtonImage != null && textVisible) {
 
-            int textScale = 60;
+            int textScale = 50;
             int txtW = (buttonWidth * textScale) / 100;
 
             int originalW = textButtonImage.getWidth(null);

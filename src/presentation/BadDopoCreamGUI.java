@@ -1,8 +1,6 @@
 package presentation;
 
-import domain.game.Game;
-import domain.game.Level;
-import domain.game.PlayingState;
+import domain.game.*;
 import persistence.*;
 
 import javax.swing.*;
@@ -136,14 +134,41 @@ public class BadDopoCreamGUI extends JFrame {
         if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             try {
                 Level level = LevelImporter.importFromFile(chooser.getSelectedFile());
-                game.setState(new PlayingState(game, level));
+
+                // 1. Preguntar al usuario qué modo desea para este nivel
+                GameMode[] modes = {GameMode.PLAYER, GameMode.PVP, GameMode.PVM, GameMode.MVM};
+                int response = JOptionPane.showOptionDialog(
+                        this,
+                        "Selecciona el modo de juego para este nivel:",
+                        "Configuración de Nivel",
+                        JOptionPane.DEFAULT_OPTION,
+                        JOptionPane.QUESTION_MESSAGE,
+                        null,
+                        modes,
+                        modes[0] // Opción por defecto
+                );
+
+                // Si cierra la ventana sin elegir, cancelamos
+                if (response < 0) return;
+
+                GameMode selectedMode = modes[response];
+
+                // 2. Usar el Builder con el modo seleccionado
+                PlayingState state = new PlayingStateBuilder(game)
+                        .withCustomLevel(level)
+                        .withMode(selectedMode)
+                        // Aquí podrías preguntar también por IAs si es PvM/MvM,
+                        // pero para simplificar, usaremos defaults o podrías expandir este diálogo.
+                        .build();
+
+                game.setState(state);
 
                 JOptionPane.showMessageDialog(this,
-                        "Nivel importado correctamente",
+                        "Nivel importado correctamente en modo " + selectedMode,
                         "Éxito",
                         JOptionPane.INFORMATION_MESSAGE);
 
-            } catch (BadIceException | IOException ex) {
+            } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this,
                         "Error al importar nivel:\n" + ex.getMessage(),
                         "Error",

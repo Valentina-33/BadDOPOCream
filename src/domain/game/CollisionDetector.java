@@ -28,18 +28,8 @@ public class CollisionDetector {
     public static void checkPlayerFruit(List<Player> players, List<Fruit> fruits) {
         for (Player p : players) {
             for (Fruit f : fruits) {
-                if (f.isCollected() || f.isFrozen()) continue;
-
-                if (f instanceof Cactus cactus && cactus.getHasSpikesDangerous()) {
-                    if (sameCell(cactus.getPosition(), p.getPosition())) {
-                        p.onHitByEnemy(cactus);
-                        continue;
-                    }
-                }
-
                 if (sameCell(p.getPosition(), f.getPosition())) {
-                    f.collect();
-                    p.addScore(f.getPoints());
+                    f.onPlayerCollision(p);
                 }
             }
         }

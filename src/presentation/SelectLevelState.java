@@ -137,30 +137,43 @@ public class SelectLevelState implements GameState {
     }
 
     private void startLevel(int levelNumber) {
+        // 1. Definimos los sabores por defecto si vienen nulos
         Flavour p1 = (flavourP1 != null) ? flavourP1 : Flavour.VANILLA;
         Flavour p2 = (flavourP2 != null) ? flavourP2 : Flavour.VANILLA;
 
-        if (gameMode == 0) {
-            game.setState(new PlayingState(game, levelNumber, GameMode.PLAYER, null, null, p1, null));
-            return;
+        // 2. Iniciamos el Builder con la configuración base (Juego, Nivel, Sabores)
+        PlayingStateBuilder builder = new PlayingStateBuilder(game)
+                .withLevelNumber(levelNumber)
+                .withPlayer1Flavour(p1)
+                .withPlayer2Flavour(p2);
+
+        // 3. Configuramos el Modo y las IAs según la opción seleccionada (gameMode int)
+        switch (gameMode) {
+            case 0: // PLAYER SOLO
+                builder.withMode(GameMode.PLAYER);
+                break;
+
+            case 1: // PvP
+                builder.withMode(GameMode.PVP);
+                break;
+
+            case 2: // PvM
+                AIProfile machineAI = (aiProfileP2 != null) ? aiProfileP2 : AIProfile.HUNGRY;
+                builder.withMode(GameMode.PVM)
+                        .withPlayer2AI(machineAI);
+                break;
+
+            case 3: // MvM
+                AIProfile m1 = (aiProfileP1 != null) ? aiProfileP1 : AIProfile.HUNGRY;
+                AIProfile m2 = (aiProfileP2 != null) ? aiProfileP2 : AIProfile.FEARFUL;
+                builder.withMode(GameMode.MVM)
+                        .withPlayer1AI(m1)
+                        .withPlayer2AI(m2);
+                break;
         }
 
-        if (gameMode == 1) {
-            game.setState(new PlayingState(game, levelNumber, GameMode.PVP, null, null, p1, p2));
-            return;
-        }
-
-        if (gameMode == 2) {
-            AIProfile p2AI = (aiProfileP2 != null) ? aiProfileP2 : AIProfile.HUNGRY;
-            game.setState(new PlayingState(game, levelNumber, GameMode.PVM, null, p2AI, p1, p2));
-            return;
-        }
-
-        if (gameMode == 3) {
-            AIProfile p1AI = (aiProfileP1 != null) ? aiProfileP1 : AIProfile.HUNGRY;
-            AIProfile p2AI = (aiProfileP2 != null) ? aiProfileP2 : AIProfile.FEARFUL;
-            game.setState(new PlayingState(game, levelNumber, GameMode.MVM, p1AI, p2AI, p1, p2));
-        }
+        // 4. ¡Construimos y cambiamos el estado!
+        game.setState(builder.build());
     }
 
     @Override public void keyPressed(Integer key) {}

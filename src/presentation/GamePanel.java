@@ -9,9 +9,6 @@ import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 
-/**
- * Inicializa la primera pantalla del juego, usando Listeners y Events.
- */
 public class GamePanel extends JPanel implements Runnable, KeyListener, MouseListener {
 
     public static final Integer TILE_SIZE = 32;
@@ -32,8 +29,9 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseLis
     public GamePanel(Game game) {
         this.game = game;
         this.game.setState(new MenuState(game));
-        setBackground(new Color(104,135,158));
+        setBackground(new Color(104, 135, 158));
         setFocusable(true);
+        setFocusTraversalKeysEnabled(false);
         addKeyListener(this);
         addMouseListener(this);
     }
@@ -42,6 +40,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseLis
     public void addNotify() {
         super.addNotify();
         requestFocusInWindow();
+        SwingUtilities.invokeLater(this::requestFocusInWindow);
     }
 
     public void start() {
@@ -104,11 +103,13 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseLis
     @Override
     public void keyPressed(KeyEvent e) {
         game.keyPressed(e.getKeyCode());
+        e.consume();
     }
 
     @Override
     public void keyReleased(KeyEvent e) {
         game.keyReleased(e.getKeyCode());
+        e.consume();
     }
 
     @Override
@@ -123,6 +124,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener, MouseLis
             game.mouseClicked(realX, realY);
         }
     }
+
     @Override public void mousePressed(MouseEvent e) {}
     @Override public void mouseReleased(MouseEvent e) {}
     @Override public void mouseEntered(MouseEvent e) {}

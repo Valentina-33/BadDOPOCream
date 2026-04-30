@@ -1,17 +1,19 @@
 package domain.entities;
 import domain.model.Position;
 import domain.game.Level;
+import presentation.SpriteFactory;
 
-public class Banana extends Fruit{
+public class Banana extends Fruit {
     private static final int BANANA_SCORE = 100;
-    private static final Sprite SPRITE = new Sprite("/banana.jpg");
-    public Banana(Position position){
-        super(position, BANANA_SCORE, SPRITE);
+
+    public Banana(Position position) {
+        // Obtenemos el sprite de la fábrica
+        super(position, BANANA_SCORE, SpriteFactory.getStaticSprite("/banana.jpg"));
     }
 
     @Override
-    // Los bananos son estáticos
-    public void update(Level level) { }
+    public void update(Level level) { /* Estática */ }
+
     @Override
-    public int getPoints() {return BANANA_SCORE;}
+    public int getPoints() { return BANANA_SCORE; }
 }
